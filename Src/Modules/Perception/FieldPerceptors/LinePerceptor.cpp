@@ -278,8 +278,9 @@ hEndScan:
 
       if(flipped)
       {
-        for(auto spot : std::ranges::reverse_view(candidate.spots))
+        for(auto it = candidate.spots.rbegin(); it != candidate.spots.rend(); ++it)
         {
+          const Spot* spot = *it;
           line.spotsInField.emplace_back(spot->field);
           line.spotsInImg.emplace_back(static_cast<Vector2i>(spot->image.cast<int>()));
         }

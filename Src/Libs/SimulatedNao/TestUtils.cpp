@@ -1,8 +1,9 @@
 #include "TestUtils.h"
+#include <filesystem>
+#include <iomanip>
+#include <sstream>
 #include <string>
 #include <vector>
-#include <filesystem>
-#include <format>
 #include <QCoreApplication>
 #include <QFileInfo>
 
@@ -10,8 +11,11 @@ std::filesystem::path TestUtils::generateTestDirPath(const std::string& scenePat
 {
   std::filesystem::path baseDir = std::filesystem::temp_directory_path() / "b-human";
   std::string normalScenePath = std::filesystem::path(scenePath).lexically_normal().string();
-  std::string testID = std::format("{}:{}", normalScenePath, TestUtils::getProcessID());
-  std::string testDir = std::format("test_{:08x}", crc32(testID));
+  std::string testID = normalScenePath + ":" + std::to_string(TestUtils::getProcessID());
+
+  std::ostringstream testDirStream;
+  testDirStream << "test_" << std::hex << std::setw(8) << std::setfill('0') << crc32(testID);
+  std::string testDir = testDirStream.str();
   return baseDir / testDir;
 }
 

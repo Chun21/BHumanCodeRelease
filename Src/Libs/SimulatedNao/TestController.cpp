@@ -16,9 +16,9 @@
 #include "Streaming/InStreams.h"
 #include "Streaming/OutStreams.h"
 #include "TestUtils.h"
-#include <format>
 #include <fstream>
 #include <regex>
+#include <sstream>
 #ifdef MACOS
 #include <MainWindow.h>
 #include <QApplication>
@@ -26,6 +26,16 @@
 #endif
 
 using TestUtils::ExpressionEvaluator;
+
+namespace
+{
+template<typename... Args> std::string makeString(const Args&... args)
+{
+  std::ostringstream stream;
+  (stream << ... << args);
+  return stream.str();
+}
+}
 
 bool TestController::init(const QString& scenePath, TestController::TestParameters& inputParams)
 {
@@ -118,13 +128,12 @@ bool TestController::loadTest(const FieldDimensions& /*fieldDims*/)
   // Write information into console
   if(testParams.testType == situation)
   {
-    message += std::format("{} / {} test runs completed\n"
-                           "{} / {} test runs successful\n",
-                           testState.currTestRuns - 1, testParams.numOfTestRuns, testState.numOfSuccess, testParams.numOfTestRuns);
+    message += makeString(testState.currTestRuns - 1, " / ", testParams.numOfTestRuns, " test runs completed\n",
+                          testState.numOfSuccess, " / ", testParams.numOfTestRuns, " test runs successful\n");
   }
   else if(testParams.testType == game)
   {
-    message += std::format("{} / {} test runs completed\n", testState.currTestRuns - 1, testParams.numOfTestRuns);
+    message += makeString(testState.currTestRuns - 1, " / ", testParams.numOfTestRuns, " test runs completed\n");
 
     int winsTeamA = 0, winsTeamB = 0;
     int totalScoreA = 0, totalScoreB = 0;
@@ -150,11 +159,10 @@ bool TestController::loadTest(const FieldDimensions& /*fieldDims*/)
       totalScoreB += scoreB;
     }
 
-    message += std::format("Total score: {}:{}\n"
-                           "Wins Team A: {}\n"
-                           "Wins Team B: {}\n"
-                           "Draws: {}\n",
-                           totalScoreA, totalScoreB, winsTeamA, winsTeamB, draws);
+    message += makeString("Total score: ", totalScoreA, ":", totalScoreB, "\n",
+                          "Wins Team A: ", winsTeamA, "\n",
+                          "Wins Team B: ", winsTeamB, "\n",
+                          "Draws: ", draws, "\n");
   }
 
   // Add fuzzing for the move parameters
@@ -565,7 +573,7 @@ TestController::TestAction TestController::finishTestCycle()
       resultCode.push_back('0');
       if(isFuzzingApplicable())
       {
-        std::filesystem::path failedConPath = testDirPath / std::format("faulty_config_{}th_run.con", testState.currTestRuns);
+        std::filesystem::path failedConPath = testDirPath / makeString("faulty_config_", testState.currTestRuns, "th_run.con");
         std::filesystem::copy_file(getFuzzedConfigPath(), failedConPath);
       }
     }
@@ -669,8 +677,8 @@ void TestController::logTestResults()
         ++draws;
       }
 
-      csvResults += std::format("{},{},{},{},{},{},{},{}\n", gameNo, halfNo, kickoffTeam,
-                                scoreA, scoreB, budgetA, budgetB, winner);
+      csvResults += makeString(gameNo, ",", halfNo, ",", kickoffTeam, ",",
+                               scoreA, ",", scoreB, ",", budgetA, ",", budgetB, ",", winner, "\n");
     };
 
     for(int game = 0; game < gameCount; ++game)
@@ -685,14 +693,11 @@ void TestController::logTestResults()
     float avgScoreA = testParams.numOfTestRuns > 0 ? static_cast<float>(totalScoreA) / testParams.numOfTestRuns : 0.0f;
     float avgScoreB = testParams.numOfTestRuns > 0 ? static_cast<float>(totalScoreB) / testParams.numOfTestRuns : 0.0f;
 
-    message += std::format("Total score: {}:{}\n"
-                           "Wins Team A: {}\n"
-                           "Wins Team B: {}\n"
-                           "Draws: {}\n"
-                           "Average score of a single half-time: {}:{}\n",
-                           totalScoreA, totalScoreB,
-                           winsTeamA, winsTeamB, draws,
-                           avgScoreA, avgScoreB);
+    message += makeString("Total score: ", totalScoreA, ":", totalScoreB, "\n",
+                          "Wins Team A: ", winsTeamA, "\n",
+                          "Wins Team B: ", winsTeamB, "\n",
+                          "Draws: ", draws, "\n",
+                          "Average score of a single half-time: ", avgScoreA, ":", avgScoreB, "\n");
   }
   else
   {
@@ -701,10 +706,10 @@ void TestController::logTestResults()
     {
       std::string targetHits = testState.cycleResultCodes[i].substr(0, testState.cycleResultCodes[i].size() - 1);
       std::string success = testState.cycleResultCodes[i].back() == '1' ? "true" : "false";
-      csvResults += std::format("{},{},{}\n", i + 1, targetHits, success);
+      csvResults += makeString(i + 1, ",", targetHits, ",", success, "\n");
     }
-    message += std::format("Number of successful runs / number of total runs:\n{}/{}\n",
-                           testState.numOfSuccess, testParams.numOfTestRuns);
+    message += makeString("Number of successful runs / number of total runs:\n",
+                          testState.numOfSuccess, "/", testParams.numOfTestRuns, "\n");
   }
 
   OutTextRawFile((testDirPath / "results.csv").string()) << csvResults;

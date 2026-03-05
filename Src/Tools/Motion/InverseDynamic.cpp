@@ -120,8 +120,9 @@ void InverseDynamic::calculateJointTorques(JointDynamics& jointDynamics, const V
     forward(bodies, jointDynamics, massCalibration, node);
 
   jointDynamics.torques.fill(0.f);
-  for(const Node& node : kinematicTree[Global::getSettings().robotType] | std::views::reverse)
-    backward(bodies, jointDynamics, node);
+  const auto& tree = kinematicTree[Global::getSettings().robotType];
+  for(auto it = tree.rbegin(); it != tree.rend(); ++it)
+    backward(bodies, jointDynamics, *it);
 }
 
 void InverseDynamic::calculateHeadPoses(std::array<Body, Limbs::numOfLimbs>& bodies, const JointDynamics& jointDynamics, const RobotDimensions& robotDimensions)
